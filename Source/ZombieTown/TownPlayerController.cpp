@@ -3,6 +3,7 @@
 
 #include "TownPlayerController.h"
 
+#include "Targetable.h"
 #include "TownCharacter.h"
 #include "TownieAIController.h"
 #include "ZombieAIController.h"
@@ -220,6 +221,7 @@ void ATownPlayerController::SendZombies()
 
 	FHitResult hitResult;
 	FVector pointLocation;
+	AActor* targetableActor = nullptr;
 	if (!GetPointingAt(SendDistance, hitResult, zombieActors))
 	{
 		pointLocation = GetCharacter()->GetActorLocation() + GetCharacter()->GetActorForwardVector() * SendDistance;
@@ -227,6 +229,25 @@ void ATownPlayerController::SendZombies()
 	else
 	{
 		pointLocation = hitResult.ImpactPoint;
+		if (hitResult.GetActor())
+		{
+			LOGI("Hit %s", *(hitResult.GetActor()->GetActorNameOrLabel()));
+			UTargetable* targetable = hitResult.GetActor()->FindComponentByClass<UTargetable>();
+			if (targetable)
+			{
+				targetableActor = hitResult.GetActor();
+				LOGI("Nancy is targeting %s", *(targetableActor->GetActorNameOrLabel()));
+			}
+			else if (hitResult.GetActor()->GetParentActor())
+			{
+				targetable = hitResult.GetActor()->GetParentActor()->FindComponentByClass<UTargetable>();
+				if (targetable)
+				{
+					targetableActor = hitResult.GetActor()->GetParentActor();
+					LOGI("Nancy is targeting %s", *(targetableActor->GetActorNameOrLabel()));
+				}
+			}
+		}
 	}
 	if (SendParticles)
 	{
@@ -239,6 +260,10 @@ void ATownPlayerController::SendZombies()
 	for (AZombieAIController* zombie : zombies)
 	{
 		zombie->SendTowardThisFrame(pointLocation);
+		if (targetableActor)
+		{
+			zombie->TargetActor(targetableActor);
+		}
 	}
 }
 

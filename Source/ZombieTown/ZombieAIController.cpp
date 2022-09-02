@@ -4,9 +4,13 @@
 #include "ZombieAIController.h"
 #include "TownieAIController.h"
 #include "TownCharacter.h"
+#include "HealthComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "GameFramework/Character.h"
 #include "PrintHelper.h"
+#include "GameFramework/PawnMovementComponent.h"
 #include "ZombieTownGameModeBase.h"
+#include "ActorHelpers.h"
 
 AZombieAIController::AZombieAIController()
 {
@@ -18,6 +22,7 @@ void AZombieAIController::BeginPlay()
 	townCharacter = Cast<ATownCharacter>(GetCharacter());
 	GetWorld()->GetTimerManager().SetTimer(searchEnemiesHandle, this, &AZombieAIController::SearchNearestEnemyActor, SearchForEnemiesEverySeconds + FMath::FRand(), true);
 	PrimaryActorTick.bCanEverTick = true;
+	player = Cast<ATownCharacter>(GetWorld()->GetFirstPlayerController()->GetCharacter());
 }
 
 void AZombieAIController::Tick(float dt)
@@ -47,8 +52,36 @@ void AZombieAIController::Tick(float dt)
 	}
 	else if (isSendingThisFrame)
 	{
-		MoveToLocation(sendLocation);
+		if (targetedActor) {
+			MoveTowardTargetThisFrame(targetedActor);
+		}
+		else {
+			MoveToLocation(sendLocation);
+		}
 		isSendingThisFrame = false;
+	}
+	else if (targetedActor != nullptr)
+	{
+		UHealthComponent* health = targetedActor->FindComponentByClass<UHealthComponent>();
+		if (health && health->IsDead())
+		{
+			targetedActor = nullptr;
+		}
+		else
+		{
+			SetFocus(targetedActor);
+			MoveTowardTargetThisFrame(targetedActor);
+			FVector targetPoint;
+			float dist = FVector::Dist(ptOnTargetedActor, townCharacter->GetActorLocation());
+
+			if (townCharacter)
+			{
+				if (dist < townCharacter->MeleeAttackRange && townCharacter->AttackWithCooldown(AttackCooldownSeconds))
+				{
+					DamageActor(targetedActor);
+				}
+			}
+		}
 	}
 	else if (nearestEnemyActor)
 	{
@@ -72,12 +105,13 @@ void AZombieAIController::Tick(float dt)
 	else if (!followingActor)
 	{
 		StopMovement();
+		MaybeAvoidPlayer();
 	}
 	else
 	{
 		SetFocus(followingActor);
 		MoveToActor(followingActor, FollowSummonerRadius);
-
+		MaybeAvoidPlayer();
 		float dist = (followingActor->GetActorLocation() - GetCharacter()->GetActorLocation()).Length();
 		if (dist > StopFollowSummonerRadius)
 		{
@@ -104,6 +138,22 @@ void AZombieAIController::MoveTowardEnemyThisFrame(ATownCharacter* actor)
 	followingActor = nullptr;
 	nearestEnemyActor = actor;
 	MoveToActor(actor);
+}
+
+void AZombieAIController::MoveTowardTargetThisFrame(AActor* actor)
+{
+	nearestEnemyActor = nullptr;
+	targetedActor = actor;
+	MoveTo(ptOnTargetedActor);
+}
+
+void AZombieAIController::TargetActor(AActor* target)
+{
+	followingActor = nullptr;
+	nearestEnemyActor = nullptr;
+	targetedActor = target;
+	UActorHelpers::DistanceToActor(targetedActor,
+		townCharacter->GetActorLocation(), ECollisionChannel::ECC_WorldDynamic, ptOnTargetedActor);
 }
 
 void AZombieAIController::SearchNearestEnemyActor()
@@ -160,4 +210,36 @@ bool AZombieAIController::IsGamePaused() const
 		return false;
 	}
 	return townCharacter->GameMode->IsPausedForScriptedEvent;
+}
+
+void AZombieAIController::MaybeAvoidPlayer()
+{
+	if (!player)
+	{
+		return;
+	}
+	if (!townCharacter)
+	{
+		return;
+	}
+	UPawnMovementComponent* movement = townCharacter->GetMovementComponent();
+	if (!movement)
+	{
+		return;
+	}
+	UCapsuleComponent* capsule = player->GetCapsuleComponent();
+	if (!capsule)
+	{
+		return;
+	}
+	UCapsuleComponent* myCapsule = townCharacter->GetCapsuleComponent();
+	if (!myCapsule)
+	{
+		return;
+	}
+	if (capsule->OverlapComponent(myCapsule->GetComponentLocation(), 
+		myCapsule->GetComponentRotation().Quaternion(), myCapsule->GetCollisionShape(10.0f)))
+	{
+		movement->AddInputVector((townCharacter->GetActorLocation() - player->GetActorLocation()) * 100);
+	}
 }

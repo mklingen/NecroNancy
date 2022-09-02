@@ -41,6 +41,7 @@ public:
 	void SendTowardThisFrame(const FVector& location);
 	void SummonTowardThisFrame(AActor* actor);
 	void MoveTowardEnemyThisFrame(ATownCharacter* actor);
+	void MoveTowardTargetThisFrame(AActor* actor);
 	void SearchNearestEnemyActor();
 
 	void DamageActor(AActor* actor);
@@ -54,15 +55,27 @@ public:
 	UFUNCTION(BlueprintCallable)
 		bool IsGamePaused() const;
 
+	UFUNCTION(BlueprintCallable)
+		void TargetActor(AActor* target);
+
 private:
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY()
 		AActor* summonTargetThisFrame = nullptr;
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY()
 		AActor* followingActor = nullptr;
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY()
 		ATownCharacter* nearestEnemyActor = nullptr;
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY()
+		AActor* targetedActor = nullptr;
+	UPROPERTY()
+		FVector ptOnTargetedActor;
+	UPROPERTY()
 		ATownCharacter* townCharacter = nullptr;
+	UPROPERTY()
+		ATownCharacter* player = nullptr;
+
+	void MaybeAvoidPlayer();
+
 	FVector sendLocation;
 	bool isSendingThisFrame = false;
 	FTimerHandle searchEnemiesHandle;

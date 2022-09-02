@@ -123,7 +123,7 @@ void UStaticMeshFadeComponent::StartFadingOut()
 {
 	timeStateChanged = GetWorld()->GetTimeSeconds();
 	State = EFadeState::FadingOut;
-	LOGW("Now fading out.");
+
 	GetOwner()->SetActorHiddenInGame(false);
 	if (mesh)
 	{
@@ -133,7 +133,6 @@ void UStaticMeshFadeComponent::StartFadingOut()
 			{
 				if (origMaterial[i])
 				{
-					LOGI("Setting material %d", i);
 					mesh->SetMaterial(i, fadeMaterial);
 				}
 			}
@@ -146,14 +145,12 @@ void UStaticMeshFadeComponent::StartFadingIn()
 	timeStateChanged = GetWorld()->GetTimeSeconds();
 	State = EFadeState::FadingIn;
 	GetOwner()->SetActorHiddenInGame(false);
-	LOGW("Now fading in.");
 	if (fadeMaterial)
 	{
 		for (int i = 0; i < origMaterial.Num(); i++)
 		{
 			if (origMaterial[i])
 			{
-				LOGI("Setting material %d", i);
 				mesh->SetMaterial(i, fadeMaterial);
 			}
 		}
@@ -163,7 +160,6 @@ void UStaticMeshFadeComponent::StartFadingIn()
 void UStaticMeshFadeComponent::BecomeInvisible()
 {
 	GetOwner()->SetActorHiddenInGame(true);
-	LOGW("Now invisible.");
 	State = EFadeState::Invisible;
 	if (mesh)
 	{
@@ -171,7 +167,6 @@ void UStaticMeshFadeComponent::BecomeInvisible()
 		{
 			if (origMaterial[i])
 			{
-				LOGI("Setting material %d", i);
 				mesh->SetMaterial(i, origMaterial[i]);
 			}
 		}
@@ -181,7 +176,6 @@ void UStaticMeshFadeComponent::BecomeInvisible()
 void UStaticMeshFadeComponent::BecomeVisible()
 {
 	GetOwner()->SetActorHiddenInGame(false);
-	LOGW("Now visible.");
 	State = EFadeState::Visible;
 	if (mesh)
 	{
@@ -189,7 +183,6 @@ void UStaticMeshFadeComponent::BecomeVisible()
 		{
 			if (origMaterial[i])
 			{
-				LOGI("Setting material %d", i);
 				mesh->SetMaterial(i, origMaterial[i]);
 			}
 		}

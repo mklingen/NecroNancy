@@ -14,6 +14,7 @@ class UZombifier;
 class UToolComponent;
 class UGunComponent;
 class AZombieTownGameModeBase;
+class UFlasherComponent;
 
 UCLASS()
 class ZOMBIETOWN_API ATownCharacter : public ACharacter
@@ -39,6 +40,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere)
 		UToolComponent* toolComponent = nullptr;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+		UFlasherComponent* flasherComponent = nullptr;
 
 public:
 	// Called every frame

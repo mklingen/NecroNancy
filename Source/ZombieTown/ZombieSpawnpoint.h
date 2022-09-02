@@ -31,6 +31,8 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 		bool IsActive = true;
 
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
+		bool HasEverSpawned = false;
 
 protected:
 	// Called when the game starts or when spawned

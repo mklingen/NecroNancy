@@ -11,6 +11,7 @@
 #include "GunComponent.h"
 #include "ZombieTownGameModeBase.h"
 #include "PrintHelper.h"
+#include "FlasherComponent.h"
 
 // Sets default values
 ATownCharacter::ATownCharacter()
@@ -20,12 +21,14 @@ ATownCharacter::ATownCharacter()
 	health = CreateDefaultSubobject<UHealthComponent>(TEXT("Health"));
 	zombifier = CreateDefaultSubobject<UZombifier>(TEXT("Zombifier"));
 	toolComponent = CreateDefaultSubobject<UToolComponent>(TEXT("Tool"));
+	flasherComponent = CreateDefaultSubobject<UFlasherComponent>(TEXT("Flasher"));
 }
 
 float ATownCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	float amount = Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
-	health->Damage(amount);
+	// This should be handled by the health component itself.. very confusing, yes?
+	//health->Damage(amount);
 	if (health->IsDead())
 	{
 		UCapsuleComponent* capsule = GetCapsuleComponent();

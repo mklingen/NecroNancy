@@ -129,6 +129,10 @@ void UScriptedSceneManager::DisplayEvent(FScriptedEvent scriptedEvent, const FCo
 	if (CurrentEvent.PlaceWordBubbleOverPlayer)
 	{
 		CurrentEvent.PlaceWordBubbleOverActor = Cast<AActor>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
+		if (!CurrentEvent.PlaceWordBubbleOverActor)
+		{
+			LOGE("No player pawn?");
+		}
 	}
 	if (wordBubble)
 	{
@@ -141,6 +145,18 @@ void UScriptedSceneManager::DisplayEvent(FScriptedEvent scriptedEvent, const FCo
 		AActor* wordBubbleActor = GetWorld()->SpawnActor<AActor>(WordBubbleClass, FTransform());
 		wordBubbleActor->AttachToActor(CurrentEvent.PlaceWordBubbleOverActor, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 		wordBubble = wordBubbleActor->FindComponentByClass<UWordBubbleComponent>();
+		if (!wordBubble)
+		{
+			LOGE("Could not create word bubble?");
+		}
+		else
+		{
+			LOGI("Spawned a word bubble.");
+		}
+	}
+	else
+	{
+		LOGD("Not spawning word bubble.");
 	}
 
 	APlayerCameraManager* cameraManager = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);
@@ -221,8 +237,17 @@ void UScriptedSceneManager::Clear()
 		}
 		else
 		{
-			currentCompletionCallback.ExecuteIfBound();
+			LOGI("Event %s complete. Clearing and calling completion delegates..", *(CurrentEvent.Id));
+			if (!currentCompletionCallback.IsBound()) {
+				LOGI("Event %s has no completion callback. Ignoring.", *(CurrentEvent.Id));
+			}
+			// Reset the event.
+			CurrentEvent = FScriptedEvent();
+			// Reset the callback. Note we have to do this BEFORE executing the previous callback,
+			// not after (the completion callback could RESET itself while executing!)
+			auto prevCallback = currentCompletionCallback;
 			currentCompletionCallback = FCompletedEvent();
+			prevCallback.ExecuteIfBound();
 		}
 	}
 }
