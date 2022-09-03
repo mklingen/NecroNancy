@@ -187,3 +187,16 @@ UGunComponent* ATownCharacter::GetGunOrNull() const
 	}
 	return nullptr;
 }
+
+bool ATownCharacter::GetHasAttachedTool() const
+{
+	if (toolComponent)
+	{
+		AActor* tool = toolComponent->GetSpawnedTool();
+		if (tool)
+		{
+			return true;
+		}
+	}
+	return false;
+}

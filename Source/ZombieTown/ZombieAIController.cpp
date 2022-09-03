@@ -38,6 +38,7 @@ void AZombieAIController::Tick(float dt)
 	}
 	if (IsGamePaused())
 	{
+		StopMovement();
 		return;
 	}
 

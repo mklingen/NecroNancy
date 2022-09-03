@@ -16,5 +16,8 @@ public:
 		bool IsPausedForScriptedEvent = false;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-		bool AllowUnpausingOnAnyKey = false;
+		bool AllowRequestNextScriptedEvent = false;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+		bool RequestNextScriptedEvent = false;
 };

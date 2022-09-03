@@ -42,6 +42,7 @@ void ATownieAIController::Tick(float dt)
 	{
 		if (GetTownCharacter()->GameMode->IsPausedForScriptedEvent)
 		{
+			StopMovement();
 			return;
 		}
 	}

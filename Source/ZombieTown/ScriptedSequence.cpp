@@ -6,10 +6,18 @@
 void FScriptedSequence::GenerateEvents(TArray<FScriptedEvent>& events)
 {
 	int count = 0;
+	AActor* cameraOverActor = nullptr;
 	for (const FScriptSpeechElement& element : Script)
 	{
 		FScriptedEvent created = GenerateEvent(element);
 		created.Id = Id + FString::FromInt(count);
+		if (count < Script.Num() - 1 && count > 0 && 
+			created.MoveCameraToActorTransform != cameraOverActor)
+		{
+			created.CameraTransitionParams = FViewTargetTransitionParams();
+			created.CameraReturnTransitionParams = FViewTargetTransitionParams();
+		}
+		cameraOverActor = created.MoveCameraToActorTransform;
 		events.Add(created);
 		count++;
 	}

@@ -43,6 +43,12 @@ protected:
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
 		UUserWidget* pauseHintWidget = nullptr;
 
+	UPROPERTY()
+		USkeletalMeshComponent* targetSkeletalMesh = nullptr;
+	
+	UPROPERTY()
+		TSubclassOf<UAnimInstance> prevAnimationStateMachine = nullptr;
+
 	void UpdateWordBubble();
 	float timeToStartOffset = 0.0f;
 	FViewTargetTransitionParams defaultViewTransitionParams;
@@ -68,10 +74,10 @@ public:
 	UFUNCTION(BlueprintCallable, meta = (AutoCreateRefTerm = "completedDelegate"))
 		bool DisplayEventId(const FString& id, const FCompletedEvent& completedDelegate);
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (TitleProperty = "Id"))
 		TArray<FScriptedEvent> Events;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (TitleProperty = "Id"))
 		TArray<FScriptedSequence> Sequences;
 
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)

@@ -331,10 +331,11 @@ void ATownPlayerController::OnUse()
 	{
 		return;
 	}
-	if (townCharacter->GameMode->AllowUnpausingOnAnyKey && townCharacter->GameMode->IsPausedForScriptedEvent)
+	if (townCharacter->GameMode->AllowRequestNextScriptedEvent &&
+		townCharacter->GameMode->IsPausedForScriptedEvent)
 	{
-		townCharacter->GameMode->IsPausedForScriptedEvent = false;
-		townCharacter->GameMode->AllowUnpausingOnAnyKey = false;
+		townCharacter->GameMode->RequestNextScriptedEvent = true;
+		townCharacter->GameMode->AllowRequestNextScriptedEvent = false;
 	}
 	else
 	{

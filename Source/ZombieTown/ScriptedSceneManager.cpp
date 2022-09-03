@@ -109,8 +109,9 @@ void UScriptedSceneManager::TickComponent(float DeltaTime, ELevelTick TickType, 
 	else if (CurrentEvent.PauseGame)
 	{
 		// User unpaused the game, clear the current event.
-		if (!gameMode->IsPausedForScriptedEvent)
+		if (!gameMode->IsPausedForScriptedEvent || gameMode->RequestNextScriptedEvent)
 		{
+			gameMode->RequestNextScriptedEvent = false;
 			Clear();
 		}
 	}
@@ -126,6 +127,8 @@ void UScriptedSceneManager::DisplayEvent(FScriptedEvent scriptedEvent, const FCo
 	CurrentText = "";
 	fullText = CurrentEvent.Text.ToString();
 	currentCompletionCallback = callback;
+	targetSkeletalMesh = nullptr;
+	prevAnimationStateMachine = nullptr;
 	if (CurrentEvent.PlaceWordBubbleOverPlayer)
 	{
 		CurrentEvent.PlaceWordBubbleOverActor = Cast<AActor>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
@@ -138,6 +141,19 @@ void UScriptedSceneManager::DisplayEvent(FScriptedEvent scriptedEvent, const FCo
 	{
 		wordBubble->DestroyWordBubble();
 		wordBubble = nullptr;
+	}
+
+	if (CurrentEvent.PlaceWordBubbleOverActor && CurrentEvent.PlayActorAnimation)
+	{
+		USkeletalMeshComponent* actorMesh = CurrentEvent.PlaceWordBubbleOverActor->FindComponentByClass<USkeletalMeshComponent>();
+		if (actorMesh != nullptr)
+		{
+			targetSkeletalMesh = actorMesh;
+			prevAnimationStateMachine = targetSkeletalMesh->AnimClass;
+			targetSkeletalMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+			targetSkeletalMesh->SetAnimation(CurrentEvent.PlayActorAnimation);
+			targetSkeletalMesh->Play(CurrentEvent.AnimationLoops);
+		}
 	}
 
 	if (WordBubbleClass && CurrentEvent.PlaceWordBubbleOverActor)
@@ -186,7 +202,7 @@ void UScriptedSceneManager::DisplayEvent(FScriptedEvent scriptedEvent, const FCo
 		if (gameMode)
 		{
 			gameMode->IsPausedForScriptedEvent = true;
-			gameMode->AllowUnpausingOnAnyKey = true;
+			gameMode->AllowRequestNextScriptedEvent = true;
 		}
 
 		if (pauseHintWidget)
@@ -203,10 +219,10 @@ void UScriptedSceneManager::Clear()
 	if (hasEvent && CurrentEvent.PauseGame)
 	{
 		// Unpause the game.
-		if (gameMode)
+		if (gameMode && CurrentEvent.GoToIdNext.IsEmpty())
 		{
 			gameMode->IsPausedForScriptedEvent = false;
-			gameMode->AllowUnpausingOnAnyKey = true;
+			gameMode->AllowRequestNextScriptedEvent = false;
 		}
 		// Reset the camera.
 		if (CurrentEvent.MoveCameraToActorTransform && CurrentEvent.GoToIdNext.IsEmpty())
@@ -230,6 +246,14 @@ void UScriptedSceneManager::Clear()
 			wordBubble->DestroyWordBubble();
 			wordBubble = nullptr;
 		}
+
+		if (targetSkeletalMesh && prevAnimationStateMachine)
+		{
+			targetSkeletalMesh->SetAnimInstanceClass(prevAnimationStateMachine);
+			targetSkeletalMesh = nullptr;
+			prevAnimationStateMachine = nullptr;
+		}
+
 		if (!CurrentEvent.GoToIdNext.IsEmpty())
 		{
 			LOGI("Auto-transitioning to the next event.");

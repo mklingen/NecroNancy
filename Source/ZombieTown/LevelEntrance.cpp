@@ -39,7 +39,7 @@ void ALevelEntrance::EnterLevel()
 		TArray<AActor*> zombies;
 		UGameplayStatics::GetAllActorsOfClass(GetWorld(), AZombieAIController::StaticClass(), zombies);
 		int idx = 0;
-		double teleportRadius = 100;
+		double teleportRadius = 200;
 		int numZombies = zombies.Num();
 		double dTheta = 0;
 		if (numZombies > 0)
@@ -75,6 +75,7 @@ void ALevelEntrance::EnterLevel()
 			{
 				zombieAI->SummonTowardThisFrame(player);
 			}
+			idx++;
 		}
 	}
 }

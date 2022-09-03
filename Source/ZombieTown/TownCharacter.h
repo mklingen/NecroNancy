@@ -95,6 +95,9 @@ public:
 		bool GetHasGun() const;
 
 	UFUNCTION(BlueprintCallable)
+		bool GetHasAttachedTool() const;
+
+	UFUNCTION(BlueprintCallable)
 		UGunComponent* GetGunOrNull() const;
 
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
