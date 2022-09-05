@@ -241,6 +241,6 @@ void AZombieAIController::MaybeAvoidPlayer()
 	if (capsule->OverlapComponent(myCapsule->GetComponentLocation(), 
 		myCapsule->GetComponentRotation().Quaternion(), myCapsule->GetCollisionShape(10.0f)))
 	{
-		movement->AddInputVector((townCharacter->GetActorLocation() - player->GetActorLocation()) * 100);
+		movement->AddInputVector((townCharacter->GetActorLocation() - player->GetActorLocation()) * 1000);
 	}
 }

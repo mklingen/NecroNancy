@@ -12,6 +12,7 @@
 #include "ZombieTownGameModeBase.h"
 #include "PrintHelper.h"
 #include "FlasherComponent.h"
+#include "MeleeWeapon.h"
 
 // Sets default values
 ATownCharacter::ATownCharacter()
@@ -175,6 +176,11 @@ bool ATownCharacter::GetHasGun() const
 	return (GetGunOrNull() != nullptr);
 }
 
+bool ATownCharacter::GetHasMeleeWeapon() const
+{
+	return (GetMeleeWeaponOrNull() != nullptr);
+}
+
 UGunComponent* ATownCharacter::GetGunOrNull() const
 {
 	if (toolComponent)
@@ -199,4 +205,18 @@ bool ATownCharacter::GetHasAttachedTool() const
 		}
 	}
 	return false;
+}
+
+
+UMeleeWeapon* ATownCharacter::GetMeleeWeaponOrNull() const
+{
+	if (toolComponent)
+	{
+		AActor* tool = toolComponent->GetSpawnedTool();
+		if (tool)
+		{
+			return tool->FindComponentByClass<UMeleeWeapon>();
+		}
+	}
+	return nullptr;
 }

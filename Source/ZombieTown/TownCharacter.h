@@ -15,6 +15,7 @@ class UToolComponent;
 class UGunComponent;
 class AZombieTownGameModeBase;
 class UFlasherComponent;
+class UMeleeWeapon;
 
 UCLASS()
 class ZOMBIETOWN_API ATownCharacter : public ACharacter
@@ -93,6 +94,12 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		bool GetHasGun() const;
+
+	UFUNCTION(BlueprintCallable)
+		bool GetHasMeleeWeapon() const;
+
+	UFUNCTION(BlueprintCallable)
+		UMeleeWeapon* GetMeleeWeaponOrNull() const;
 
 	UFUNCTION(BlueprintCallable)
 		bool GetHasAttachedTool() const;

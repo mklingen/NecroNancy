@@ -25,6 +25,11 @@ public:
 	UFUNCTION(BlueprintCallable)
 		void Panic();
 
+
+	UFUNCTION(BlueprintCallable)
+		void MeleeAttackEnemy();
+
+
 	UFUNCTION(BlueprintCallable)
 		void ShootAtEnemy();
 
@@ -54,6 +59,9 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Shooting")
 		float ShootSpeed = 1.5f;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Melee")
+		bool isPreparingToMelee = false;
 
 	ATownCharacter* GetTownCharacter() const;
 	void SearchNearestEnemyActor();

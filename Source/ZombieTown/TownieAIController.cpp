@@ -8,6 +8,7 @@
 #include "GunComponent.h"
 #include "PrintHelper.h"
 #include "ZombieTownGameModeBase.h"
+#include "MeleeWeapon.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 ATownCharacter* ATownieAIController::GetTownCharacter() const
@@ -85,10 +86,19 @@ void ATownieAIController::Tick(float dt)
 			}
 			else
 			{
-				GetTownCharacter()->IsAiming = false;
+				if (GetTownCharacter()->GetHasMeleeWeapon() &&
+					dist < GetTownCharacter()->MeleeAttackRange &&
+					!GetTownCharacter()->IsPanicking)
+				{
+					MeleeAttackEnemy();
+				}
+				else
+				{
+					GetTownCharacter()->IsAiming = false;
+				}
 			}
 			bool isAiming = GetTownCharacter()->IsAiming;
-			if (!GetTownCharacter()->IsPanicking && !isAiming)
+			if (!GetTownCharacter()->IsPanicking && !isAiming && !isPreparingToMelee)
 			{
 				ClearFocus(EAIFocusPriority::Gameplay);
 				GetCharacter()->GetCharacterMovement()->bOrientRotationToMovement = true;
@@ -96,11 +106,7 @@ void ATownieAIController::Tick(float dt)
 				if (result == EPathFollowingRequestResult::Failed)
 				{
 					// Move sorta away, lol
-					FVector fleeLocation = pos + (enemyPos - pos).GetSafeNormal() *
-						FMath::FRand() + FVector(FMath::FRandRange(-1., 1.) * FleeRadius,
-							FMath::FRandRange(-1., 1.) * FleeRadius, 0) * 0.5f;
-					DrawDebugLine(GetWorld(), pos, fleeLocation, FColor::Green);
-					MoveToLocation(fleeLocation);
+					GetCharacter()->GetCharacterMovement()->AddInputVector((enemyPos - pos) * 1000);
 				}
 			}
 			else
@@ -110,6 +116,7 @@ void ATownieAIController::Tick(float dt)
 				if (isAiming && dist < FleeWhileAimingDist)
 				{
 					// Move sorta away, lol
+					GetCharacter()->GetCharacterMovement()->AddInputVector((enemyPos - pos) * 1000);
 					MoveToLocation(pos - (enemyPos - pos).GetSafeNormal() * FleeRadius);
 				}
 				else
@@ -121,6 +128,7 @@ void ATownieAIController::Tick(float dt)
 	}
 	else
 	{
+		// Idle Behavior.
 		GetTownCharacter()->IsAiming = false;
 		ClearFocus(EAIFocusPriority::Gameplay);
 		GetTownCharacter()->IsPanicking = false;
@@ -202,6 +210,40 @@ bool ATownieAIController::CastShootingRay(const FVector& target, FHitResult& out
 	params.AddIgnoredActor(GetCharacter());
 	DrawDebugLine(GetWorld(), origin, target, FColor::Yellow, false);
 	return GetWorld()->LineTraceSingleByChannel(outHit, origin, target, ECollisionChannel::ECC_Visibility, params);
+}
+
+void ATownieAIController::MeleeAttackEnemy()
+{
+	if (!GetTownCharacter())
+	{
+		isPreparingToMelee = false;
+		return;
+	}
+	if (!nearestEnemyActor)
+	{
+		isPreparingToMelee = false;
+		return;
+	}
+
+	isPreparingToMelee = true;
+
+	UMeleeWeapon* melee = GetTownCharacter()->GetMeleeWeaponOrNull();
+
+	if (melee && nearestEnemyActor)
+	{
+		if (GetTownCharacter()->AttackWithCooldown(melee->AttackRate))
+		{
+			melee->DoAttack(nearestEnemyActor);
+			melee->OnAttack(nearestEnemyActor->GetActorLocation());
+		}
+
+		if (nearestEnemyActor->GetIsDead())
+		{
+			isPreparingToMelee = false;
+		}
+	}
+
+
 }
 
 void ATownieAIController::ShootAtEnemy()
