@@ -33,13 +33,13 @@ public:
 	UFUNCTION(BlueprintCallable)
 		void ShootAtEnemy();
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Visibility")
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Visibility")
 		float SearchForEnemiesEverySeconds = 1.0f;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Fright")
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Fright")
 		float PanicTime = 1.0f;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Visibility")
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Visibility")
 		float EnemyVisibilityRadius = 600.0f;
 
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Fright")
@@ -60,11 +60,20 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Shooting")
 		float ShootingRange = 550.0f;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Shooting")
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Shooting")
 		float FleeWhileAimingDist = 150.0f;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Shooting")
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Shooting")
 		float ShootSpeed = 1.5f;
+
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Fighting")
+		float AggressionGrowthPerSecond = 0.45f;
+
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Fighting")
+		float AggressionToCauseAttack = 1.0f;
+
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Fighting")
+		float AttackFollowthrough = 0.5f;
 
 	ATownCharacter* GetTownCharacter() const;
 	void SearchNearestEnemyActor();
@@ -75,6 +84,10 @@ public:
 		bool HasGun() const;
 	UFUNCTION(BlueprintCallable)
 		bool HasMeleeWeapon() const;
+	UFUNCTION(BlueprintCallable)
+		bool IsReadyToAttack() const;
+	UFUNCTION(BlueprintCallable)
+		bool IsReadyToAttackHysteresis(float timeout) const;
 
 protected:
 	FTimerHandle searchEnemiesHandle;
@@ -90,7 +103,11 @@ protected:
 	void IdleBehavior();
 	bool CastShootingRay(const FVector& target, FHitResult& outHit);
 	void ReduceFright(float dt);
+	void ReduceAggression(float dt);
+	void HandleAggression(float dt);
 
+	// Controls how likely the character is to fight back.
+	float aggression = 0;
 	// Controls how likely the character is to panic. Panicking
 	// reduces fright, as does fleeing. Being near an enemy increases fright.
 	float fright = 0;
@@ -98,5 +115,7 @@ protected:
 	float panicTimer = 0;
 	float timeLastPanicked = 0;
 	float timeSinceLastPanicked = 0;
+	float timeLastAttacked = 0;
+	float timeLastReadyToAttack = 0;
 
 };

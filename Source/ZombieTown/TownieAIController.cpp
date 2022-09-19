@@ -24,8 +24,20 @@ void ATownieAIController::BeginPlay()
 	PanicTime = PanicTime + FMath::FRand();
 }
 
+bool ATownieAIController::IsReadyToAttack() const
+{
+	return aggression >= AggressionToCauseAttack;
+}
+
+bool ATownieAIController::IsReadyToAttackHysteresis(float timeout) const
+{
+	return IsReadyToAttack() || GetWorld()->GetTimeSeconds() - timeLastReadyToAttack < timeout;
+}
+
+
 void ATownieAIController::RespondToEnemy(float time, float dt)
 {
+	HandleAggression(dt);
 	SetFocus(nearestEnemyActor);
 	FVector pos = GetCharacter()->GetActorLocation();
 	FVector enemyPos = nearestEnemyActor->GetActorLocation();
@@ -34,6 +46,8 @@ void ATownieAIController::RespondToEnemy(float time, float dt)
 	{
 		RespondToDistantEnemey();
 		ReduceFright(dt);
+		ReduceAggression(dt);
+		GetTownCharacter()->IsAiming = false;
 	}
 	else
 	{
@@ -42,15 +56,36 @@ void ATownieAIController::RespondToEnemy(float time, float dt)
 		{
 			return;
 		}
-		MaybeAttackEnemy(dist);
-		bool isAiming = GetTownCharacter()->IsAiming;
-		if (!isAiming)
+		if (IsReadyToAttack())
 		{
-			FleeEnemy(pos, enemyPos);
+			if (HasGun())
+			{
+				GetTownCharacter()->IsAiming = true;
+			}
+
+			MaybeAttackEnemy(dist);
+			bool isAiming = GetTownCharacter()->IsAiming;
+			if (!isAiming)
+			{
+				if (!HasMeleeWeapon())
+				{
+					FleeEnemy(pos, enemyPos);
+				}
+				else
+				{
+					StopMovement();
+					SetFocus(nearestEnemyActor);
+				}
+			}
+			else
+			{
+				AimAtEnemy(isAiming, dist, enemyPos, pos);
+			}
 		}
 		else
 		{
-			AimAtEnemy(isAiming, dist, enemyPos, pos);
+			FleeEnemy(pos, enemyPos);
+			GetTownCharacter()->IsAiming = false;
 		}
 	}
 }
@@ -94,16 +129,16 @@ bool ATownieAIController::MaybeAttackEnemy(float dist)
 		dist < ShootingRange)
 	{
 		ShootAtEnemy();
+		timeLastAttacked = GetWorld()->GetTimeSeconds();
 		return true;
 	}
 	else if (HasMeleeWeapon() &&
 		dist < GetTownCharacter()->MeleeAttackRange)
 	{
 		MeleeAttackEnemy();
+		timeLastAttacked = GetWorld()->GetTimeSeconds();
 		return true;
 	}
-
-	GetTownCharacter()->IsAiming = false;
 	return false;
 }
 
@@ -135,6 +170,24 @@ void ATownieAIController::RespondToDistantEnemey()
 	GetTownCharacter()->IsAiming = false;
 }
 
+void ATownieAIController::HandleAggression(float dt)
+{
+	aggression += dt * AggressionGrowthPerSecond;
+	if (aggression > AggressionToCauseAttack)
+	{
+		aggression = AggressionToCauseAttack;
+	}
+}
+
+void ATownieAIController::ReduceAggression(float dt)
+{
+	aggression -= dt * AggressionGrowthPerSecond * 0.5f;
+	if (aggression < 0.0f)
+	{
+		aggression = 0.0f;
+	}
+}
+
 void ATownieAIController::Tick(float dt)
 {
 	Super::Tick(dt);
@@ -159,16 +212,29 @@ void ATownieAIController::Tick(float dt)
 		}
 	}
 
+
 	float time = GetWorld()->GetTimeSeconds();
 	GetTownCharacter()->IsScared = timeSinceLastPanicked < RemainScaredFor;
 
-	if (nearestEnemyActor && !nearestEnemyActor->GetIsDead())
+	if (IsReadyToAttack())
+	{
+		timeLastReadyToAttack = time;
+	}
+	GetTownCharacter()->IsReadyToAttack = IsReadyToAttackHysteresis(AttackFollowthrough);
+
+	if (time - timeLastAttacked < AttackFollowthrough)
+	{
+		// Pause after each attack.
+		IdleBehavior();
+	}
+	else if (nearestEnemyActor && !nearestEnemyActor->GetIsDead())
 	{
 		// An enemy is near.
 		RespondToEnemy(time, dt);
 	}
 	else
 	{
+		GetTownCharacter()->IsAiming = IsReadyToAttackHysteresis(AttackFollowthrough);
 		// Idle Behavior.
 		IdleBehavior();
 		fright = 0;
@@ -193,7 +259,6 @@ bool ATownieAIController::HasMeleeWeapon() const
 
 void ATownieAIController::IdleBehavior()
 {
-	GetTownCharacter()->IsAiming = false;
 	ClearFocus(EAIFocusPriority::Gameplay);
 	GetTownCharacter()->IsPanicking = false;
 	GetCharacter()->GetCharacterMovement()->bOrientRotationToMovement = true;
@@ -289,7 +354,7 @@ void ATownieAIController::MeleeAttackEnemy()
 	{
 		return;
 	}
-
+	aggression = 0.0f;
 	UMeleeWeapon* melee = GetTownCharacter()->GetMeleeWeaponOrNull();
 
 	if (melee && nearestEnemyActor)
@@ -309,7 +374,7 @@ void ATownieAIController::ShootAtEnemy()
 	{
 		return;
 	}
-
+	aggression = 0.0f;
 	GetTownCharacter()->IsAiming = true;
 
 	FVector hitPoint;

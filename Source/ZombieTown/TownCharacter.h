@@ -41,7 +41,7 @@ protected:
 
 	UPROPERTY(VisibleAnywhere)
 		UToolComponent* toolComponent = nullptr;
-	
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		UFlasherComponent* flasherComponent = nullptr;
 
@@ -88,6 +88,9 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 		bool IsAiming = false;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+		bool IsReadyToAttack = false;
 
 	UFUNCTION(BlueprintCallable)
 		ATownCharacter* BecomeZombie();
