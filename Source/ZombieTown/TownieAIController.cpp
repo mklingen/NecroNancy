@@ -24,6 +24,117 @@ void ATownieAIController::BeginPlay()
 	PanicTime = PanicTime + FMath::FRand();
 }
 
+void ATownieAIController::RespondToEnemy(float time, float dt)
+{
+	SetFocus(nearestEnemyActor);
+	FVector pos = GetCharacter()->GetActorLocation();
+	FVector enemyPos = nearestEnemyActor->GetActorLocation();
+	float dist = (pos - enemyPos).Length();
+	if (dist > EnemyVisibilityRadius)
+	{
+		RespondToDistantEnemey();
+		ReduceFright(dt);
+	}
+	else
+	{
+		ManagePanicWhenNearEnemy(dt);
+		if (IsPanicking())
+		{
+			return;
+		}
+		MaybeAttackEnemy(dist);
+		bool isAiming = GetTownCharacter()->IsAiming;
+		if (!isAiming)
+		{
+			FleeEnemy(pos, enemyPos);
+		}
+		else
+		{
+			AimAtEnemy(isAiming, dist, enemyPos, pos);
+		}
+	}
+}
+
+void ATownieAIController::AimAtEnemy(bool isAiming, float dist, FVector& enemyPos, FVector& pos)
+{
+	SetFocus(nearestEnemyActor);
+	GetCharacter()->GetCharacterMovement()->bOrientRotationToMovement = false;
+	if (isAiming && dist < FleeWhileAimingDist)
+	{
+		// Move sorta away, lol
+		GetCharacter()->GetCharacterMovement()->AddInputVector((enemyPos - pos) * 1000);
+		MoveToLocation(pos - (enemyPos - pos).GetSafeNormal() * FleeRadius);
+	}
+	else
+	{
+		StopMovement();
+	}
+}
+
+void ATownieAIController::FleeEnemy(FVector& pos, FVector& enemyPos)
+{
+	ClearFocus(EAIFocusPriority::Gameplay);
+	GetCharacter()->GetCharacterMovement()->bOrientRotationToMovement = true;
+	EPathFollowingRequestResult::Type result = MoveToLocation(pos - (enemyPos - pos).GetSafeNormal() * FleeRadius);
+	if (result == EPathFollowingRequestResult::Failed)
+	{
+		// Move sorta away, lol
+		GetCharacter()->GetCharacterMovement()->AddInputVector((enemyPos - pos) * 1000);
+	}
+}
+
+bool ATownieAIController::MaybeAttackEnemy(float dist)
+{
+	if (IsPanicking())
+	{
+		return false;
+	}
+
+	if (HasGun() &&
+		dist < ShootingRange)
+	{
+		ShootAtEnemy();
+		return true;
+	}
+	else if (HasMeleeWeapon() &&
+		dist < GetTownCharacter()->MeleeAttackRange)
+	{
+		MeleeAttackEnemy();
+		return true;
+	}
+
+	GetTownCharacter()->IsAiming = false;
+	return false;
+}
+
+void ATownieAIController::ManagePanicWhenNearEnemy(float dt)
+{
+	if (fright > FrightToCausePanic && !IsPanicking())
+	{
+		Panic();
+	}
+	else
+	{
+		fright += FrightGrowthNearEnemy * dt;
+	}
+}
+
+void ATownieAIController::ReduceFright(float dt)
+{
+	if (fright > 0)
+	{
+		fright -= FrightShrinkWhenFarFromEnemy * dt;
+	}
+}
+
+void ATownieAIController::RespondToDistantEnemey()
+{
+	ClearFocus(EAIFocusPriority::Gameplay);
+	GetTownCharacter()->IsPanicking = false;
+	GetCharacter()->GetCharacterMovement()->bOrientRotationToMovement = true;
+	GetTownCharacter()->IsAiming = false;
+}
+
 void ATownieAIController::Tick(float dt)
 {
 	Super::Tick(dt);
@@ -49,91 +160,43 @@ void ATownieAIController::Tick(float dt)
 	}
 
 	float time = GetWorld()->GetTimeSeconds();
-	float timeSinceLastPanicked = (time - timeLastPanicked);
 	GetTownCharacter()->IsScared = timeSinceLastPanicked < RemainScaredFor;
 
 	if (nearestEnemyActor && !nearestEnemyActor->GetIsDead())
 	{
-		SetFocus(nearestEnemyActor);
-		FVector pos = GetCharacter()->GetActorLocation();
-		FVector enemyPos = nearestEnemyActor->GetActorLocation();
-		float dist = (pos - enemyPos).Length();
-		if (dist > EnemyVisibilityRadius)
-		{
-			ClearFocus(EAIFocusPriority::Gameplay);
-			GetTownCharacter()->IsPanicking = false;
-			GetCharacter()->GetCharacterMovement()->bOrientRotationToMovement = true;
-			GetTownCharacter()->IsAiming = false;
-		}
-		else
-		{
-			if (timeSinceLastPanicked > PanicTime && GetTownCharacter()->IsPanicking)
-			{
-				GetTownCharacter()->IsPanicking = false;
-				timeLastPanicked = time;
-			}
-
-			if (timeSinceLastPanicked > PanicCooldown && !GetTownCharacter()->IsPanicking)
-			{
-				Panic();
-			}
-
-			if (GetTownCharacter()->GetHasGun() &&
-				dist < ShootingRange &&
-				!GetTownCharacter()->IsPanicking)
-			{
-				ShootAtEnemy();
-			}
-			else
-			{
-				if (GetTownCharacter()->GetHasMeleeWeapon() &&
-					dist < GetTownCharacter()->MeleeAttackRange &&
-					!GetTownCharacter()->IsPanicking)
-				{
-					MeleeAttackEnemy();
-				}
-				else
-				{
-					GetTownCharacter()->IsAiming = false;
-				}
-			}
-			bool isAiming = GetTownCharacter()->IsAiming;
-			if (!GetTownCharacter()->IsPanicking && !isAiming && !isPreparingToMelee)
-			{
-				ClearFocus(EAIFocusPriority::Gameplay);
-				GetCharacter()->GetCharacterMovement()->bOrientRotationToMovement = true;
-				EPathFollowingRequestResult::Type result = MoveToLocation(pos - (enemyPos - pos).GetSafeNormal() * FleeRadius);
-				if (result == EPathFollowingRequestResult::Failed)
-				{
-					// Move sorta away, lol
-					GetCharacter()->GetCharacterMovement()->AddInputVector((enemyPos - pos) * 1000);
-				}
-			}
-			else
-			{
-				SetFocus(nearestEnemyActor);
-				GetCharacter()->GetCharacterMovement()->bOrientRotationToMovement = false;
-				if (isAiming && dist < FleeWhileAimingDist)
-				{
-					// Move sorta away, lol
-					GetCharacter()->GetCharacterMovement()->AddInputVector((enemyPos - pos) * 1000);
-					MoveToLocation(pos - (enemyPos - pos).GetSafeNormal() * FleeRadius);
-				}
-				else
-				{
-					StopMovement();
-				}
-			}
-		}
+		// An enemy is near.
+		RespondToEnemy(time, dt);
 	}
 	else
 	{
 		// Idle Behavior.
-		GetTownCharacter()->IsAiming = false;
-		ClearFocus(EAIFocusPriority::Gameplay);
-		GetTownCharacter()->IsPanicking = false;
-		GetCharacter()->GetCharacterMovement()->bOrientRotationToMovement = true;
+		IdleBehavior();
+		fright = 0;
 	}
+}
+
+
+bool ATownieAIController::IsPanicking() const
+{
+	return panicTimer > 0.0;
+}
+
+bool ATownieAIController::HasGun() const
+{
+	return GetTownCharacter()->GetHasGun();
+}
+
+bool ATownieAIController::HasMeleeWeapon() const
+{
+	return GetTownCharacter()->GetHasMeleeWeapon();
+}
+
+void ATownieAIController::IdleBehavior()
+{
+	GetTownCharacter()->IsAiming = false;
+	ClearFocus(EAIFocusPriority::Gameplay);
+	GetTownCharacter()->IsPanicking = false;
+	GetCharacter()->GetCharacterMovement()->bOrientRotationToMovement = true;
 }
 
 bool ATownieAIController::GetIsDead() const
@@ -165,6 +228,10 @@ void ATownieAIController::Panic()
 	}
 	character->IsPanicking = true;
 	timeLastPanicked = GetWorld()->GetTimeSeconds();
+	panicTimer = 0;
+	timeSinceLastPanicked = 0;
+	// Reset fright -- it will grow if an enemy comes near again.
+	fright = 0;
 }
 
 void ATownieAIController::SearchNearestEnemyActor()
@@ -216,16 +283,12 @@ void ATownieAIController::MeleeAttackEnemy()
 {
 	if (!GetTownCharacter())
 	{
-		isPreparingToMelee = false;
 		return;
 	}
 	if (!nearestEnemyActor)
 	{
-		isPreparingToMelee = false;
 		return;
 	}
-
-	isPreparingToMelee = true;
 
 	UMeleeWeapon* melee = GetTownCharacter()->GetMeleeWeaponOrNull();
 
@@ -236,13 +299,7 @@ void ATownieAIController::MeleeAttackEnemy()
 			melee->DoAttack(nearestEnemyActor);
 			melee->OnAttack(nearestEnemyActor->GetActorLocation());
 		}
-
-		if (nearestEnemyActor->GetIsDead())
-		{
-			isPreparingToMelee = false;
-		}
 	}
-
 
 }
 

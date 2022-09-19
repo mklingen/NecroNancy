@@ -39,17 +39,23 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Fright")
 		float PanicTime = 1.0f;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Fright")
-		float PanicCooldown = 5.0f;
-
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Visibility")
 		float EnemyVisibilityRadius = 600.0f;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Fright")
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Fright")
 		float FleeRadius = 500.0f;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Fright")
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Fright")
 		float RemainScaredFor = 20.0f;
+
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Fright")
+		float FrightGrowthNearEnemy = 0.5f;
+
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Fright")
+		float FrightToCausePanic = 1.0f;
+
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Fright")
+		float FrightShrinkWhenFarFromEnemy = 0.25f;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Shooting")
 		float ShootingRange = 550.0f;
@@ -60,16 +66,37 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Shooting")
 		float ShootSpeed = 1.5f;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Melee")
-		bool isPreparingToMelee = false;
-
 	ATownCharacter* GetTownCharacter() const;
 	void SearchNearestEnemyActor();
 
+	UFUNCTION(BlueprintCallable)
+		bool IsPanicking() const;
+	UFUNCTION(BlueprintCallable)
+		bool HasGun() const;
+	UFUNCTION(BlueprintCallable)
+		bool HasMeleeWeapon() const;
+
 protected:
-	float timeLastPanicked = -100;
 	FTimerHandle searchEnemiesHandle;
 	ATownCharacter* nearestEnemyActor = nullptr;
 
+
+	void RespondToEnemy(float time, float dt);
+	void AimAtEnemy(bool isAiming, float dist, FVector& enemyPos, FVector& pos);
+	void FleeEnemy(FVector& pos, FVector& enemyPos);
+	bool MaybeAttackEnemy(float dist);
+	void ManagePanicWhenNearEnemy(float dt);
+	void RespondToDistantEnemey();
+	void IdleBehavior();
 	bool CastShootingRay(const FVector& target, FHitResult& outHit);
+	void ReduceFright(float dt);
+
+	// Controls how likely the character is to panic. Panicking
+	// reduces fright, as does fleeing. Being near an enemy increases fright.
+	float fright = 0;
+	// Timer that gets set to PanicTime when we start panicking.
+	float panicTimer = 0;
+	float timeLastPanicked = 0;
+	float timeSinceLastPanicked = 0;
+
 };
