@@ -21,6 +21,7 @@ void ATownieAIController::BeginPlay()
 	Super::BeginPlay();
 	GetWorld()->GetTimerManager().SetTimer(searchEnemiesHandle, this, &ATownieAIController::SearchNearestEnemyActor, SearchForEnemiesEverySeconds + FMath::FRand(), true);
 	PrimaryActorTick.bCanEverTick = true;
+	lastPatrolTime = -RandomPatrolTime;
 	PanicTime = PanicTime + FMath::FRand();
 }
 
@@ -47,6 +48,7 @@ void ATownieAIController::RespondToEnemy(float time, float dt)
 		RespondToDistantEnemey();
 		ReduceFright(dt);
 		ReduceAggression(dt);
+		IdleBehavior(time);
 		GetTownCharacter()->IsAiming = false;
 	}
 	else
@@ -98,7 +100,6 @@ void ATownieAIController::AimAtEnemy(bool isAiming, float dist, FVector& enemyPo
 	{
 		// Move sorta away, lol
 		GetCharacter()->GetCharacterMovement()->AddInputVector((enemyPos - pos) * 1000);
-		MoveToLocation(pos - (enemyPos - pos).GetSafeNormal() * FleeRadius);
 	}
 	else
 	{
@@ -113,8 +114,13 @@ void ATownieAIController::FleeEnemy(FVector& pos, FVector& enemyPos)
 	EPathFollowingRequestResult::Type result = MoveToLocation(pos - (enemyPos - pos).GetSafeNormal() * FleeRadius);
 	if (result == EPathFollowingRequestResult::Failed)
 	{
+		LOGI("Path planning failed, so doing a random patrol.");
 		// Move sorta away, lol
-		GetCharacter()->GetCharacterMovement()->AddInputVector((enemyPos - pos) * 1000);
+		DoRandomPatrol(GetWorld()->GetTimeSeconds());
+	}
+	else
+	{
+		LOGI("Path planning success.");
 	}
 }
 
@@ -229,7 +235,7 @@ void ATownieAIController::Tick(float dt)
 	if (time - timeLastAttacked < AttackFollowthrough)
 	{
 		// Pause after each attack.
-		IdleBehavior();
+		IdleBehavior(time);
 	}
 	else if (nearestEnemyActor && !nearestEnemyActor->GetIsDead())
 	{
@@ -240,7 +246,7 @@ void ATownieAIController::Tick(float dt)
 	{
 		GetTownCharacter()->IsAiming = IsReadyToAttackHysteresis(AttackFollowthrough);
 		// Idle Behavior.
-		IdleBehavior();
+		IdleBehavior(time);
 		fright = 0;
 	}
 }
@@ -261,11 +267,31 @@ bool ATownieAIController::HasMeleeWeapon() const
 	return GetTownCharacter()->GetHasMeleeWeapon();
 }
 
-void ATownieAIController::IdleBehavior()
+void ATownieAIController::DoRandomPatrol(float time)
+{
+	lastPatrolTime = time;
+	randomPatrolTarget = FVector(FMath::FRandRange(-RandomPatrolRadius, RandomPatrolRadius), 
+								 FMath::FRandRange(-RandomPatrolRadius, RandomPatrolRadius), 
+								 0) + GetCharacter()->GetActorLocation();
+	if ((HasGun() || HasMeleeWeapon()) && 
+		(nearestEnemyActor != nullptr && !nearestEnemyActor->GetIsDead()))
+	{
+		randomPatrolTarget = nearestEnemyActor->GetActorLocation();
+	}
+	MoveToLocation(randomPatrolTarget);
+	DrawDebugLine(GetWorld(), GetCharacter()->GetActorLocation(), randomPatrolTarget, FColor::Yellow, false, 5.0f);
+}
+
+void ATownieAIController::IdleBehavior(float time)
 {
 	ClearFocus(EAIFocusPriority::Gameplay);
 	GetTownCharacter()->IsPanicking = false;
 	GetCharacter()->GetCharacterMovement()->bOrientRotationToMovement = true;
+
+	if (time - lastPatrolTime > RandomPatrolTime)
+	{
+		DoRandomPatrol(time);
+	}
 }
 
 bool ATownieAIController::GetIsDead() const
@@ -344,7 +370,6 @@ bool ATownieAIController::CastShootingRay(const FVector& target, FHitResult& out
 
 	FCollisionQueryParams params;
 	params.AddIgnoredActor(GetCharacter());
-	DrawDebugLine(GetWorld(), origin, target, FColor::Yellow, false);
 	return GetWorld()->LineTraceSingleByChannel(outHit, origin, target, ECollisionChannel::ECC_Visibility, params);
 }
 

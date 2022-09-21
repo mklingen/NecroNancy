@@ -75,6 +75,11 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Fighting")
 		float AttackFollowthrough = 0.5f;
 
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Patrol")
+		float RandomPatrolTime = 15.0f;
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Patrol")
+		float RandomPatrolRadius = 500.0f;
+
 	ATownCharacter* GetTownCharacter() const;
 	void SearchNearestEnemyActor();
 
@@ -91,7 +96,12 @@ public:
 
 protected:
 	FTimerHandle searchEnemiesHandle;
+	
+	UPROPERTY()
 	ATownCharacter* nearestEnemyActor = nullptr;
+
+	FVector randomPatrolTarget;
+	float lastPatrolTime = 0;
 
 
 	void RespondToEnemy(float time, float dt);
@@ -100,11 +110,12 @@ protected:
 	bool MaybeAttackEnemy(float dist);
 	void ManagePanicWhenNearEnemy(float dt);
 	void RespondToDistantEnemey();
-	void IdleBehavior();
+	void IdleBehavior(float time);
 	bool CastShootingRay(const FVector& target, FHitResult& outHit);
 	void ReduceFright(float dt);
 	void ReduceAggression(float dt);
 	void HandleAggression(float dt);
+	void DoRandomPatrol(float time);
 
 	// Controls how likely the character is to fight back.
 	float aggression = 0;
