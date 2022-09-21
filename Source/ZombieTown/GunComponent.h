@@ -37,8 +37,8 @@ public:
 		float Damage = 20.0f;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-		UNiagaraSystem* MuzzleFlashParticles = nullptr;
+		UNiagaraSystem* MuzzleFlashParticles;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-		UNiagaraSystem* HitParticles = nullptr;
+		UNiagaraSystem* HitParticles;
 };

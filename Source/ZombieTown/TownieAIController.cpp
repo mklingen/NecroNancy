@@ -378,7 +378,6 @@ void ATownieAIController::ShootAtEnemy()
 	{
 		return;
 	}
-	aggression = 0.0f;
 	GetTownCharacter()->IsAiming = true;
 
 	FVector hitPoint;
@@ -405,10 +404,21 @@ void ATownieAIController::ShootAtEnemy()
 		hitPoint = rayEnd;
 		hitRotation = GetCharacter()->GetActorRotation();
 	}
+	float time = GetWorld()->GetTimeSeconds();
+
+	if (time - timeStartedShooting > ShootSpeed * 2)
+	{
+		timeStartedShooting = time;
+	}
+	if (time - timeStartedShooting < ShootSpeed)
+	{
+		return;
+	}
 	if (!GetTownCharacter()->ShootWithCoolDown(ShootSpeed, hitPoint, hitRotation))
 	{
 		return;
 	}
+	aggression = 0.0f;
 	UGunComponent* gun = GetTownCharacter()->GetGunOrNull();
 
 	if (gun && nearestEnemyActor)

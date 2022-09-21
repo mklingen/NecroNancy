@@ -117,5 +117,6 @@ protected:
 	float timeSinceLastPanicked = 0;
 	float timeLastAttacked = 0;
 	float timeLastReadyToAttack = 0;
+	float timeStartedShooting = 0;
 
 };
