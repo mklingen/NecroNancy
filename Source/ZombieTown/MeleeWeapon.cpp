@@ -3,6 +3,7 @@
 
 #include "MeleeWeapon.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 // Sets default values for this component's properties
 UMeleeWeapon::UMeleeWeapon()
@@ -37,10 +38,14 @@ void UMeleeWeapon::DoAttack(AActor* enemy)
 		ACharacter* character = Cast<ACharacter>(enemy);
 		if (character)
 		{
-			FVector dir = character->GetActorLocation() - GetOwner()->GetActorLocation();
-			dir.Z = 0;
-			dir.Normalize();
-			character->LaunchCharacter(dir * Knockback, true, false);
+			UCharacterMovementComponent* movement = character->GetCharacterMovement();
+			if (movement)
+			{
+				FVector dir = character->GetActorLocation() - GetOwner()->GetActorLocation();
+				dir.Z = 0;
+				dir.Normalize();
+				movement->AddImpulse(dir * Knockback, true);
+			}
 		}
 	}
 }

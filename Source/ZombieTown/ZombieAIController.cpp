@@ -7,6 +7,7 @@
 #include "HealthComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "PrintHelper.h"
 #include "GameFramework/PawnMovementComponent.h"
 #include "ZombieTownGameModeBase.h"
@@ -125,6 +126,22 @@ void AZombieAIController::DamageActor(AActor* actor)
 {
 	FDamageEvent damageEvent;
 	actor->TakeDamage(AttackDamage, damageEvent, this, townCharacter);
+
+	if (Knockback > 0)
+	{
+		ACharacter* character = Cast<ACharacter>(actor);
+		if (character)
+		{
+			UCharacterMovementComponent* movement = character->GetCharacterMovement();
+			if (movement)
+			{
+				FVector dir = character->GetActorLocation() - GetCharacter()->GetActorLocation();
+				dir.Z = 0;
+				dir.Normalize();
+				movement->AddImpulse(dir * Knockback, true);
+			}
+		}
+	}
 }
 
 void AZombieAIController::SendTowardThisFrame(const FVector& location)

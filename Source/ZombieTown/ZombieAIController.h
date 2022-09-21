@@ -35,6 +35,9 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 		float AttackDamage = 20.0f;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+		float Knockback = 200.0f;
+
 	UFUNCTION(BlueprintCallable)
 		bool GetIsDead() const;
 

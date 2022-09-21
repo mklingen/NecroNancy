@@ -22,14 +22,12 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
-	UStaticMeshComponent* Mesh = nullptr;
+	UPROPERTY()
+		UStaticMeshComponent* Mesh = nullptr;
 
 	float timeLastShot = 0;
 
 public:
-	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-
 	void Shoot(const FVector& hitPoint, const FRotator& hitRotation);
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)

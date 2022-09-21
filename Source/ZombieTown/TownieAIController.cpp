@@ -124,13 +124,17 @@ bool ATownieAIController::MaybeAttackEnemy(float dist)
 	{
 		return false;
 	}
-
-	if (HasGun() &&
-		dist < ShootingRange)
+	bool hasGun = HasGun();
+	if (hasGun && dist < ShootingRange)
 	{
 		ShootAtEnemy();
 		timeLastAttacked = GetWorld()->GetTimeSeconds();
 		return true;
+	}
+	else if (hasGun && dist < ShootingRange * 2)
+	{
+		GetTownCharacter()->IsAiming = true;
+		return false;
 	}
 	else if (HasMeleeWeapon() &&
 		dist < GetTownCharacter()->MeleeAttackRange)
@@ -395,13 +399,11 @@ void ATownieAIController::ShootAtEnemy()
 	{
 		hitPoint = hitResult.ImpactPoint;
 		hitRotation = (hitResult.ImpactNormal).Rotation();
-		DrawDebugLine(GetWorld(), GetTownCharacter()->GetActorLocation(), hitPoint, FColor::Green);
 	}
 	else
 	{
 		hitPoint = rayEnd;
 		hitRotation = GetCharacter()->GetActorRotation();
-		DrawDebugLine(GetWorld(), GetTownCharacter()->GetActorLocation(), hitPoint, FColor::Red);
 	}
 	if (!GetTownCharacter()->ShootWithCoolDown(ShootSpeed, hitPoint, hitRotation))
 	{

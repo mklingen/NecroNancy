@@ -23,6 +23,7 @@ void UHealthComponent::BeginPlay()
 	FScriptDelegate delegate;
 	delegate.BindUFunction(this, TEXT("OnTakeAnyDamage"));
 	this->GetOwner()->OnTakeAnyDamage.Add(delegate);
+	Health = MaxHealth;
 
 }
 
