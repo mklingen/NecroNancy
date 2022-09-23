@@ -224,7 +224,8 @@ void ATownieAIController::Tick(float dt)
 
 
 	float time = GetWorld()->GetTimeSeconds();
-	GetTownCharacter()->IsScared = timeSinceLastPanicked < RemainScaredFor;
+	timeSinceLastPanicked = time - timeLastPanicked;
+	GetTownCharacter()->IsScared = timeLastPanicked > 0 && (timeSinceLastPanicked < RemainScaredFor);
 
 	if (IsReadyToAttack())
 	{
@@ -288,7 +289,7 @@ void ATownieAIController::IdleBehavior(float time)
 	GetTownCharacter()->IsPanicking = false;
 	GetCharacter()->GetCharacterMovement()->bOrientRotationToMovement = true;
 
-	if (time - lastPatrolTime > RandomPatrolTime)
+	if (EnableRandomPatrol && (time - lastPatrolTime > RandomPatrolTime))
 	{
 		DoRandomPatrol(time);
 	}

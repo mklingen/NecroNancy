@@ -76,6 +76,8 @@ public:
 		float AttackFollowthrough = 0.5f;
 
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Patrol")
+		bool EnableRandomPatrol = true;
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Patrol")
 		float RandomPatrolTime = 15.0f;
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Patrol")
 		float RandomPatrolRadius = 500.0f;
