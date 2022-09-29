@@ -20,10 +20,15 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
+	UPROPERTY()
 	AActor* spawnedTool = nullptr;
 
 public:
-
+	UFUNCTION(BlueprintCallable)
+	bool Attach(TSubclassOf<AActor> toolActor);
+	UFUNCTION(BlueprintCallable)
+	void Detach();
+	UFUNCTION(BlueprintCallable)
 	bool AttachToMesh(USkeletalMeshComponent* mesh);
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)

@@ -330,3 +330,17 @@ bool UScriptedSceneManager::DisplaySequence(FScriptedSequence sequence, const FC
 	}
 	return false;
 }
+
+void UScriptedSceneManager::OnLevelExited()
+{
+	if (hasEvent)
+	{
+		APlayerCameraManager* cameraManager = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);
+		if (cameraManager && cameraOrigViewTarget)
+		{
+			cameraManager->SetViewTarget(cameraOrigViewTarget);
+		}
+		CurrentEvent.GoToIdNext = "";
+		Clear();
+	}
+}

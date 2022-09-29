@@ -7,6 +7,7 @@
 #include "LevelExit.generated.h"
 
 class AZombieTownGameModeBase;
+class ATownCharacter;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ZOMBIETOWN_API ULevelExit : public UActorComponent
@@ -52,6 +53,10 @@ public:
 
 	UFUNCTION()
 		void OnNextLevelLoaded();
+
+	// Debug function which allows us to skip the current level and go to the next, with a given number of zombies.
+	UFUNCTION(BlueprintCallable)
+		void DebugGoToNextLevel(TSubclassOf<ATownCharacter> zombieClass, int numZombies, TSubclassOf<AActor> nancyTool, bool nancyCanSummon);
 
 private:
 	UPROPERTY()

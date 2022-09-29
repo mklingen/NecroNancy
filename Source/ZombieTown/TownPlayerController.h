@@ -54,6 +54,15 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly)
 		UNiagaraSystem* SendParticles;
 
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly)
+		TSubclassOf<ATownCharacter> ZombieClass;
+
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly)
+		int DefaultNumZombies = 6;
+
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly)
+		TSubclassOf<AActor> ToolClass;
+
 protected:
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
 		ATownCharacter* townCharacter = nullptr;
@@ -74,6 +83,7 @@ protected:
 	void OnSummon(float value);
 	void OnSending(float value);
 	void OnUse();
+	void OnDebugNextLevel();
 
 	void SummonZombies();
 	void SendZombies();

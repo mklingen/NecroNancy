@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "ScriptedEvent.h"
 #include "ScriptedSequence.h"
+#include "OnLevelExitedInterface.h"
 
 #include "ScriptedSceneManager.generated.h"
 
@@ -14,13 +15,15 @@ class AZombieTownGameModeBase;
 class UUserWidget;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
-class ZOMBIETOWN_API UScriptedSceneManager : public UActorComponent
+class ZOMBIETOWN_API UScriptedSceneManager : public UActorComponent, public IOnLevelExitedInterface
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this component's properties
 	UScriptedSceneManager();
+
+	void OnLevelExited() override;
 
 protected:
 	// Called when the game starts

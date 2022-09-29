@@ -3,7 +3,8 @@
 
 #include "TownPlayerController.h"
 
-#include "Targetable.h"
+#include "ActorHelpers.h"
+#include "TargetableInterface.h"
 #include "TownCharacter.h"
 #include "TownieAIController.h"
 #include "ZombieAIController.h"
@@ -18,6 +19,7 @@
 #include "NiagaraComponent.h"
 #include "UsableObject.h"
 #include "PrintHelper.h"
+#include "LevelExit.h"
 
 ATownPlayerController::ATownPlayerController()
 {
@@ -76,6 +78,7 @@ void ATownPlayerController::SetupInputComponent()
 	this->InputComponent->BindAxis(TEXT("Summon"), this, &ATownPlayerController::OnSummon);
 	this->InputComponent->BindAxis(TEXT("Send"), this, &ATownPlayerController::OnSending);
 	this->InputComponent->BindAction(TEXT("Use"), IE_Pressed, this, &ATownPlayerController::OnUse);
+	this->InputComponent->BindAction(TEXT("DebugNextLevel"), IE_Pressed, this, &ATownPlayerController::OnDebugNextLevel);
 }
 
 void ATownPlayerController::OnLeftRight(float value)
@@ -221,6 +224,7 @@ void ATownPlayerController::SendZombies()
 
 	FHitResult hitResult;
 	FVector pointLocation;
+	FVector myLocation = GetCharacter()->GetActorLocation();
 	AActor* targetableActor = nullptr;
 	if (!GetPointingAt(SendDistance, hitResult, zombieActors))
 	{
@@ -232,20 +236,21 @@ void ATownPlayerController::SendZombies()
 		if (hitResult.GetActor())
 		{
 			LOGI("Hit %s", *(hitResult.GetActor()->GetActorNameOrLabel()));
-			UTargetable* targetable = hitResult.GetActor()->FindComponentByClass<UTargetable>();
+			ITargetableInterface* targetable = UActorHelpers::FindActorOrComponentInterface<ITargetableInterface>(UTargetableInterface::StaticClass(), hitResult.GetActor());
+			if (!targetable && hitResult.GetActor()->GetParentActor())
+			{
+				targetable = UActorHelpers::FindActorOrComponentInterface<ITargetableInterface>(UTargetableInterface::StaticClass(), hitResult.GetActor()->GetParentActor());
+			}
+
 			if (targetable)
 			{
-				targetableActor = hitResult.GetActor();
+				auto targetResult = targetable->GetTargetInfo(myLocation);
+				targetableActor = targetResult.targetActor;
 				LOGI("Nancy is targeting %s", *(targetableActor->GetActorNameOrLabel()));
 			}
-			else if (hitResult.GetActor()->GetParentActor())
+			else
 			{
-				targetable = hitResult.GetActor()->GetParentActor()->FindComponentByClass<UTargetable>();
-				if (targetable)
-				{
-					targetableActor = hitResult.GetActor()->GetParentActor();
-					LOGI("Nancy is targeting %s", *(targetableActor->GetActorNameOrLabel()));
-				}
+				LOGI("Item wasn't targetable.");
 			}
 		}
 	}
@@ -346,6 +351,21 @@ void ATownPlayerController::OnUse()
 		for (UUsableObject* obj : usableObjects)
 		{
 			obj->OnUse(townCharacter);
+		}
+	}
+}
+
+void ATownPlayerController::OnDebugNextLevel()
+{
+	TArray<AActor*> actors;
+	UGameplayStatics::GetAllActorsOfClass(this, AActor::StaticClass(), actors);
+	for (AActor* actor : actors)
+	{
+		ULevelExit* exitComponent = actor->FindComponentByClass<ULevelExit>();
+		if (exitComponent)
+		{
+			exitComponent->DebugGoToNextLevel(ZombieClass, DefaultNumZombies, ToolClass, true);
+			break;
 		}
 	}
 }

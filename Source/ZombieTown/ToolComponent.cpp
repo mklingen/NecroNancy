@@ -39,4 +39,23 @@ AActor* UToolComponent::GetSpawnedTool() const
 	return spawnedTool;
 }
 
+bool UToolComponent::Attach(TSubclassOf<AActor> toolActor)
+{
+	ToolActorClass = toolActor;
+	Detach();
+	USkeletalMeshComponent* mesh = GetOwner()->FindComponentByClass<USkeletalMeshComponent>();
+	if (mesh)
+	{
+		return AttachToMesh(mesh);
+	}
+	return false;
+}
+
+void UToolComponent::Detach()
+{
+	if (spawnedTool)
+	{
+		spawnedTool->Destroy();
+	}
+}
 

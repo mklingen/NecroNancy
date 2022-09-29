@@ -17,8 +17,12 @@ UTargetable::UTargetable()
 void UTargetable::BeginPlay()
 {
 	Super::BeginPlay();
-
-
-	
 }
 
+FTargetInfo UTargetable::GetTargetInfo(const FVector& targetedFrom)
+{
+	FTargetInfo info;
+	info.targetActor = GetOwner();
+	info.targetOffset = FTransform::Identity;
+	return info;
+}

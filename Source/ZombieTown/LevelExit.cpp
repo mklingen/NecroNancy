@@ -9,6 +9,11 @@
 #include "ZombieTownGameModeBase.h"
 #include "LevelEntrance.h"
 #include "PrintHelper.h"
+#include "TownCharacter.h"
+#include "TownPlayerController.h"
+#include "ZombieAIController.h"
+#include "ToolComponent.h"
+#include "OnLevelExitedInterface.h"
 
 // Sets default values for this component's properties
 ULevelExit::ULevelExit()
@@ -92,6 +97,23 @@ void ULevelExit::Exit()
 		cameraManager->StartCameraFade(0.0f, 1.0f, 0.5f, FLinearColor::Black, false, true);
 	}
 
+	TArray<UActorComponent*> exitCallbacks;
+	TArray<AActor*> actors;
+	UGameplayStatics::GetAllActorsOfClass(this, AActor::StaticClass(), actors);
+	for (AActor* actor : actors)
+	{
+		exitCallbacks.Empty();
+		exitCallbacks = actor->GetComponentsByInterface(UOnLevelExitedInterface::StaticClass());
+		for (UActorComponent* component : exitCallbacks)
+		{
+			IOnLevelExitedInterface* interface = Cast<IOnLevelExitedInterface>(component);
+			if (interface)
+			{
+				interface->OnLevelExited();
+			}
+		}
+	}
+
 	// Finishes the camera fade before we load the next level.
 	FTimerDynamicDelegate delegateTimer;
 	delegateTimer.BindUFunction(this, "LoadNextLevel");
@@ -138,4 +160,38 @@ void ULevelExit::OnNextLevelLoaded()
 		return;
 	}
 	level->EnterLevel();
+}
+
+void ULevelExit::DebugGoToNextLevel(TSubclassOf<ATownCharacter> zombieClass, int numZombies, TSubclassOf<AActor> nancyTool, bool nancyCanSummon)
+{
+	TArray<AActor*> existingZombies;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AZombieAIController::StaticClass(), existingZombies);
+	for (AActor* zombie : existingZombies)
+	{
+		zombie->Destroy();
+	}
+
+	FActorSpawnParameters params;
+	params.bNoFail = true;
+	for (int i = 0; i < numZombies; i++)
+	{
+		GetWorld()->SpawnActor<AActor>(zombieClass, params);
+	}
+
+	APawn* playerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+	if (playerPawn)
+	{
+		ATownPlayerController* controller = Cast<ATownPlayerController>(playerPawn->GetController());
+		if (controller)
+		{
+			controller->CanSummon = nancyCanSummon;
+			controller->CanSend = nancyCanSummon;
+		}
+		UToolComponent* tool = player->FindComponentByClass<UToolComponent>();
+		if (tool)
+		{
+			tool->Attach(nancyTool);
+		}
+	}
+	Exit();
 }
