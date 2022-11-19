@@ -3,8 +3,8 @@
 
 #include "Zombifier.h"
 
-#include "TownCharacter.h"
-#include "PrintHelper.h"
+#include "ZombieTown/Actors/TownCharacter.h"
+#include "ZombieTown/Helpers/PrintHelper.h"
 
 UZombifier::UZombifier()
 {
