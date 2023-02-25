@@ -42,11 +42,13 @@ void UHealthComponent::OnTakeAnyDamage(AActor* DamagedActor,
 		// NOTE: confusingly enough, this is how you get children.
 		// I have no idea what "Children" actually returns, but it isn't this!
 		DamagedActor->GetAttachedActors(attachedChildren);
+		std::function<void(AActor*)> damageActor = [damage, damageEvent, InstigatedBy, DamageCauser](AActor* actor)
+		{
+			actor->TakeDamage(damage, damageEvent, InstigatedBy, DamageCauser);
+		};
 		for (AActor* child : attachedChildren)
 		{
-			UActorHelpers::DoRecursive(child, [damage, damageEvent, InstigatedBy, DamageCauser](AActor* actor) {
-				actor->TakeDamage(damage, damageEvent, InstigatedBy, DamageCauser);
-			});
+			UActorHelpers::DoRecursive(child, damageActor);
 		}
 	}
 }

@@ -17,6 +17,7 @@ class AZombieTownGameModeBase;
 class UFlasherComponent;
 class UMeleeWeapon;
 
+// Represents a character (NPC) in the game.
 UCLASS()
 class ZOMBIETOWN_API ATownCharacter : public ACharacter
 {
@@ -30,18 +31,24 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	// Time that the creature last attacked.
 	float timeOfLastAttack = 0;
+	// Time that the creature last shot its gun.
 	float timeOfLastShot = 0;
 
+	// Health component (controls death).
 	UPROPERTY(VisibleAnywhere)
 		UHealthComponent* health = nullptr;
 
+	// Allows the creature to become a zombie.
 	UPROPERTY(VisibleAnywhere)
 		UZombifier* zombifier = nullptr;
 
+	// Controls having a tool or weapon.
 	UPROPERTY(VisibleAnywhere)
 		UToolComponent* toolComponent = nullptr;
 
+	// Controls flashing materials.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		UFlasherComponent* flasherComponent = nullptr;
 
@@ -52,12 +59,15 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	// If true, a tool will be attached when BeginPlay is called.
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 		bool ShouldAttachToolOnStartup = true;
 
+	// Attaches a tool to the character's hand.
 	UFUNCTION(BlueprintCallable)
 		void AttachTool();
 
+	// Shoots the char
 	UFUNCTION(BlueprintCallable)
 		bool ShootWithCoolDown(float cooldown, const FVector& hitPoint, const FRotator& hitRotation);
 	UFUNCTION(BlueprintCallable)

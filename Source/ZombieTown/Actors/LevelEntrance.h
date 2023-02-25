@@ -21,6 +21,7 @@ public:
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere)
 		bool TeleportZombies = true;
 
+	// This function is called when a player enters a level through a level entrance
 	UFUNCTION(BlueprintCallable)
 		void EnterLevel();
 

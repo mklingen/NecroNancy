@@ -28,8 +28,7 @@ ATownCharacter::ATownCharacter()
 float ATownCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	float amount = Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
-	// This should be handled by the health component itself.. very confusing, yes?
-	//health->Damage(amount);
+	// If the character is dead, disable the collision on capsules, and turn on a ragdoll.
 	if (health->IsDead())
 	{
 		UCapsuleComponent* capsule = GetCapsuleComponent();
@@ -51,6 +50,7 @@ float ATownCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, 
 
 void ATownCharacter::AttachTool()
 {
+	// Add a tool to the mesh.
 	if (toolComponent)
 	{
 		toolComponent->AttachToMesh(GetMesh());
@@ -61,6 +61,7 @@ void ATownCharacter::AttachTool()
 void ATownCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	// If we have a tool, attach it.
 	if (ShouldAttachToolOnStartup)
 	{
 		AttachTool();
@@ -88,11 +89,13 @@ void ATownCharacter::Tick(float DeltaTime)
 		return;
 	}
 
+	// Manage the "attacked recently" variable.
 	if (AttackedRecently && GetWorld()->GetTimeSeconds() - timeOfLastAttack > 0.25f)
 	{
 		AttackedRecently = false;
 	}
 
+	// Manage the "shot recently " variable.
 	if (ShotRecently && GetWorld()->GetTimeSeconds() - timeOfLastShot > 0.25f)
 	{
 		ShotRecently = false;
@@ -117,6 +120,7 @@ void ATownCharacter::Shoot(const FVector& hitPoint, const FRotator& hitRotation)
 	ShotRecently = true;
 	timeOfLastShot = GetWorld()->GetTimeSeconds();
 
+	// If we have a tool component, get the tool from it, then the gun, and then shoot the gun.
 	if (toolComponent)
 	{
 		AActor* tool = toolComponent->GetSpawnedTool();
@@ -181,6 +185,7 @@ bool ATownCharacter::GetHasMeleeWeapon() const
 	return (GetMeleeWeaponOrNull() != nullptr);
 }
 
+// Gets the gun component if it exists, or null otherwise.
 UGunComponent* ATownCharacter::GetGunOrNull() const
 {
 	if (toolComponent)
@@ -194,6 +199,7 @@ UGunComponent* ATownCharacter::GetGunOrNull() const
 	return nullptr;
 }
 
+// Returns true if the creature has a tool.
 bool ATownCharacter::GetHasAttachedTool() const
 {
 	if (toolComponent)
@@ -207,7 +213,7 @@ bool ATownCharacter::GetHasAttachedTool() const
 	return false;
 }
 
-
+// Gets the attached melee weapon or null.
 UMeleeWeapon* ATownCharacter::GetMeleeWeaponOrNull() const
 {
 	if (toolComponent)

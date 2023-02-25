@@ -29,14 +29,13 @@ void UScriptedSceneManager::BeginPlay()
 	Super::BeginPlay();
 
 	gameMode = Cast<AZombieTownGameModeBase>(GetWorld()->GetAuthGameMode());
-	// Setup the pause hint widget.
 	pauseHintWidget = CreateWidget<UUserWidget>(GetWorld(), PauseHintClass);
 	if (pauseHintWidget)
 	{
 		pauseHintWidget->AddToViewport(0);
 		pauseHintWidget->SetVisibility(ESlateVisibility::Hidden);
 	}
-	// Cache the camera pose.
+
 	APlayerCameraManager* cameraManager = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);
 	if (cameraManager)
 	{
@@ -49,7 +48,6 @@ void UScriptedSceneManager::UpdateWordBubble()
 {
 	if (wordBubble)
 	{
-		// Update the word bubble based on the current event.
 		wordBubble->SetTextTitle(CurrentEvent.TitleText);
 		wordBubble->SetTextContent(FText::FromString(CurrentText));
 		wordBubble->BackgroundColor = CurrentEvent.BackgroundColor;
@@ -59,7 +57,7 @@ void UScriptedSceneManager::UpdateWordBubble()
 	}
 }
 
-// Called every frame.
+// Called every frame
 void UScriptedSceneManager::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
@@ -72,18 +70,15 @@ void UScriptedSceneManager::TickComponent(float DeltaTime, ELevelTick TickType, 
 
 	UpdateWordBubble();
 
-	// Fade the word bubble in and out.
 	float t = GetWorld()->GetTimeSeconds() - currentEventStartedOn - timeToStartOffset;
 	float alpha = t / FMath::Max(CurrentEvent.TimeToDisplay, 1e-3);
 	if (alpha > 0.0f)
 	{
-		// SHow the word bubble.
 		if (wordBubble)
 		{
 			wordBubble->Show();
 		}
 		float normalizedT = FMath::Clamp(alpha, 0.0f, 1.0f);
-		// Fade in the text one letter at a time.
 		int idx = FMath::Clamp(normalizedT * fullText.Len(), 0, fullText.Len());
 		if (idx != lastCharIdx)
 		{
@@ -106,7 +101,7 @@ void UScriptedSceneManager::TickComponent(float DeltaTime, ELevelTick TickType, 
 			wordBubble->Hide();
 		}
 	}
-	// Go to the next event if we're transitioning to it.
+
 	if (t > CurrentEvent.TimeToDisplay + 1.5 && CurrentEvent.AutoTransition)
 	{
 		Clear();
@@ -125,7 +120,6 @@ void UScriptedSceneManager::TickComponent(float DeltaTime, ELevelTick TickType, 
 
 void UScriptedSceneManager::DisplayEvent(FScriptedEvent scriptedEvent, const FCompletedEvent& callback)
 {
-	// Initialize state.
 	hasEvent = true;
 	CurrentEvent = scriptedEvent;
 	currentEventStartedOn = GetWorld()->GetTimeSeconds();
@@ -135,7 +129,6 @@ void UScriptedSceneManager::DisplayEvent(FScriptedEvent scriptedEvent, const FCo
 	currentCompletionCallback = callback;
 	targetSkeletalMesh = nullptr;
 	prevAnimationStateMachine = nullptr;
-	// Create a word bubble over the player.
 	if (CurrentEvent.PlaceWordBubbleOverPlayer)
 	{
 		CurrentEvent.PlaceWordBubbleOverActor = Cast<AActor>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
@@ -144,14 +137,12 @@ void UScriptedSceneManager::DisplayEvent(FScriptedEvent scriptedEvent, const FCo
 			LOGE("No player pawn?");
 		}
 	}
-	// Destroy the previous word bubble.
 	if (wordBubble)
 	{
 		wordBubble->DestroyWordBubble();
 		wordBubble = nullptr;
 	}
 
-	// Play an animation for the target actor.
 	if (CurrentEvent.PlaceWordBubbleOverActor && CurrentEvent.PlayActorAnimation)
 	{
 		USkeletalMeshComponent* actorMesh = CurrentEvent.PlaceWordBubbleOverActor->FindComponentByClass<USkeletalMeshComponent>();
@@ -165,7 +156,6 @@ void UScriptedSceneManager::DisplayEvent(FScriptedEvent scriptedEvent, const FCo
 		}
 	}
 
-	// Place a word bubble over an actor.
 	if (WordBubbleClass && CurrentEvent.PlaceWordBubbleOverActor)
 	{
 		AActor* wordBubbleActor = GetWorld()->SpawnActor<AActor>(WordBubbleClass, FTransform());
@@ -175,9 +165,16 @@ void UScriptedSceneManager::DisplayEvent(FScriptedEvent scriptedEvent, const FCo
 		{
 			LOGE("Could not create word bubble?");
 		}
+		else
+		{
+			LOGI("Spawned a word bubble.");
+		}
+	}
+	else
+	{
+		LOGD("Not spawning word bubble.");
 	}
 
-	// Animate the camera.
 	APlayerCameraManager* cameraManager = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);
 	if (CurrentEvent.MoveCameraToActorTransform)
 	{
@@ -200,7 +197,6 @@ void UScriptedSceneManager::DisplayEvent(FScriptedEvent scriptedEvent, const FCo
 		}
 	}
 
-	// If we want to pause the game, do so.
 	if (CurrentEvent.PauseGame)
 	{
 		if (gameMode)
@@ -208,7 +204,7 @@ void UScriptedSceneManager::DisplayEvent(FScriptedEvent scriptedEvent, const FCo
 			gameMode->IsPausedForScriptedEvent = true;
 			gameMode->AllowRequestNextScriptedEvent = true;
 		}
-		// Tells the user what they need to do to un-pause.
+
 		if (pauseHintWidget)
 		{
 			pauseHintWidget->SetVisibility(ESlateVisibility::Visible);
@@ -238,12 +234,10 @@ void UScriptedSceneManager::Clear()
 			}
 		}
 	}
-	// Hide the pause widget.
 	if (pauseHintWidget)
 	{
 		pauseHintWidget->SetVisibility(ESlateVisibility::Hidden);
 	}
-	// Clear any event settings.
 	if (hasEvent)
 	{
 		hasEvent = false;
@@ -307,7 +301,7 @@ bool UScriptedSceneManager::DisplayEventId(const FString& id, const FCompletedEv
 	return false;
 }
 
-// Display an entire sequence of events. A delegate is provided for when the entire sequence is complete.
+
 bool UScriptedSceneManager::DisplaySequence(FScriptedSequence sequence, const FCompletedEvent& completionDelegate)
 {
 	TArray<FScriptedEvent> events;
