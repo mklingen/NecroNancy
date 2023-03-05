@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimationAsset.h"
+#include "ZombieTown/Story/CustomScript.h"
 #include "ScriptedEvent.generated.h"
 
 USTRUCT(BlueprintType)
@@ -65,4 +66,9 @@ struct FScriptedEvent
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Animation")
 		bool AnimationLoops = true;
+
+	// The custom script to run for the event. This will generate a new instance
+	// of this class, and keep ownership over it until the next event is triggered.
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Script")
+		TSubclassOf<UCustomScript> CustomScript = nullptr;
 };

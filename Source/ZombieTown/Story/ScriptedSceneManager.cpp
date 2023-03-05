@@ -59,6 +59,35 @@ void UScriptedSceneManager::UpdateWordBubble()
 	}
 }
 
+void UScriptedSceneManager::DisplayEventWithCustomScript(FScriptedEvent& scriptedEvent, 
+	const FCompletedEvent& completedDelegate, UCustomScript* script)
+{
+	if (scriptedEvent.CustomScript)
+	{
+		LOGE("Scripted event %s had a custom script type, but was called with a new script instance.", *(scriptedEvent.Id));
+	}
+	DisplayEvent(scriptedEvent, completedDelegate);
+	SetCurrentScript(script);
+}
+
+void UScriptedSceneManager::DisplayEventIdWithCustomScript(const FString& id, const FCompletedEvent& completedDelegate, UCustomScript* script)
+{
+	if (DisplayEventId(id, completedDelegate))
+	{
+		if (CurrentEvent.CustomScript)
+		{
+			LOGE("Scripted event %s had a custom script type, but was called with a new script instance.", *id);
+		}
+		SetCurrentScript(script);
+		script->OnBegin(this);
+	}
+}
+
+void UScriptedSceneManager::SetCurrentScript(UCustomScript* script)
+{
+	CurrentScript = script;
+}
+
 // Called every frame.
 void UScriptedSceneManager::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
@@ -69,6 +98,10 @@ void UScriptedSceneManager::TickComponent(float DeltaTime, ELevelTick TickType, 
 		return;
 	}
 
+	if (CurrentScript)
+	{
+		CurrentScript->OnUpdate(this);
+	}
 
 	UpdateWordBubble();
 
@@ -98,6 +131,13 @@ void UScriptedSceneManager::TickComponent(float DeltaTime, ELevelTick TickType, 
 				LOGE("No text content widget.");
 			}
 		}
+		if (alpha > 1.5f && !CurrentEvent.PauseGame && !CurrentEvent.AutoTransition)
+		{
+			if (wordBubble)
+			{
+				wordBubble->Hide();
+			}
+		}
 	}
 	else
 	{
@@ -106,8 +146,12 @@ void UScriptedSceneManager::TickComponent(float DeltaTime, ELevelTick TickType, 
 			wordBubble->Hide();
 		}
 	}
+	if (CurrentScript && CurrentScript->ShouldTransition(this))
+	{
+		Clear();
+	}
 	// Go to the next event if we're transitioning to it.
-	if (t > CurrentEvent.TimeToDisplay + 1.5 && CurrentEvent.AutoTransition)
+	else if (t > CurrentEvent.TimeToDisplay + 1.5 && CurrentEvent.AutoTransition)
 	{
 		Clear();
 	}
@@ -135,6 +179,22 @@ void UScriptedSceneManager::DisplayEvent(FScriptedEvent scriptedEvent, const FCo
 	currentCompletionCallback = callback;
 	targetSkeletalMesh = nullptr;
 	prevAnimationStateMachine = nullptr;
+	if (CurrentEvent.CustomScript)
+	{
+		CurrentScript = NewObject<UCustomScript>(this, CurrentEvent.CustomScript);
+	}
+	else
+	{
+		if (CurrentScript)
+		{
+			CurrentScript->OnEnd(this);
+		}
+		CurrentScript = nullptr;
+	}
+	if (CurrentScript)
+	{
+		CurrentScript->OnBegin(this);
+	}
 	// Create a word bubble over the player.
 	if (CurrentEvent.PlaceWordBubbleOverPlayer)
 	{
@@ -270,6 +330,10 @@ void UScriptedSceneManager::Clear()
 			LOGI("Event %s complete. Clearing and calling completion delegates..", *(CurrentEvent.Id));
 			if (!currentCompletionCallback.IsBound()) {
 				LOGI("Event %s has no completion callback. Ignoring.", *(CurrentEvent.Id));
+			}
+			if (CurrentScript)
+			{
+				CurrentScript->OnEnd(this);
 			}
 			// Reset the event.
 			CurrentEvent = FScriptedEvent();

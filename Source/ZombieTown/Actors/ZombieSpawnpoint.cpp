@@ -37,6 +37,7 @@ ATownCharacter* AZombieSpawnpoint::SpawnZombie()
 		LOGE("Couldn't convert to town character %s", *GetActorNameOrLabel());
 		return nullptr;
 	}
+	LOGI("Spawned a zombie");
 	HasEverSpawned = true;
 	spawnCallback.ExecuteIfBound(townCharacter);
 	if (DestroyOnSpawn)

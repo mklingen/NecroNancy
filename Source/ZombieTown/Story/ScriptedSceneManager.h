@@ -118,7 +118,22 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 		TSubclassOf<UUserWidget> PauseHintClass;
 
+	UFUNCTION(BlueprintCallable)
+		void SetCurrentScript(UCustomScript* script);
+
+	// Starts the given event, but with a custom script instance attached. This is useful for first instantiating and setting the
+	// parameters of the custom script, for example from within blueprint.
+	UFUNCTION(BlueprintCallable, meta = (AutoCreateRefTerm = "completedDelegate"))
+		void DisplayEventWithCustomScript(FScriptedEvent& scriptedEvent, const FCompletedEvent& completedDelegate, UCustomScript* script);
+
+	UFUNCTION(BlueprintCallable, meta = (AutoCreateRefTerm = "completedDelegate"))
+		void DisplayEventIdWithCustomScript(const FString& id, const FCompletedEvent& completedDelegate, UCustomScript* script);
+
+
 private:
 	FCompletedEvent currentCompletionCallback;
 
+	// The current custom script to run, if applicable.
+	UPROPERTY()
+		UCustomScript* CurrentScript = nullptr;
 };
