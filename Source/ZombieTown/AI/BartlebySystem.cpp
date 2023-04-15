@@ -185,7 +185,7 @@ FString ABartlebySystem::GenerateYouSeeString()
 		});
 	if (objects.Num() == 0)
 	{
-		return "nothing";
+		return "[]";
 	}
 
 	FString S = "[";
@@ -213,7 +213,7 @@ FString ABartlebySystem::GenerateDoorsString()
 	auto doors = GetDoorsAt(roomId);
 	if (doors.Num() == 0)
 	{
-		return "";
+		return "[]";
 	}
 
 	FString S = "[";
@@ -236,6 +236,33 @@ FString ABartlebySystem::GenerateDoorsString()
 	return S;
 }
 
+FString ABartlebySystem::GenerateRecentPlacesString()
+{
+	if (!Controller)
+	{
+		LOGE("NO controller");
+		return "";
+	}
+
+	auto places = Controller->RecentPlaces;
+	if (places.Num() == 0)
+	{
+		return "[]";
+	}
+
+	FString S = "[";
+	for (int32 i = 0; i < places.Num(); i++)
+	{
+		S += places[i];
+		if (i < places.Num() - 1)
+		{
+			S += ",";
+		}
+	}
+	S += "]";
+	return S;
+}
+
 FString ABartlebySystem::GenerateStatusString()
 {
 	if (!Controller)
@@ -248,9 +275,11 @@ FString ABartlebySystem::GenerateStatusString()
 	{
 		guestString = GuestSaidPrompt + " \"" + LastThingPlayerSaid + "\"";
 	}
-	return "You are in room_id=\"" + Controller->CurrentRoom->Id + "\".\nroom_description=\"" + Controller->CurrentRoom->Description + "\"\n"
-		"nearby_object_ids=" + GenerateYouSeeString() +
+	return "You are in room_id=\"" + Controller->CurrentRoom->Id + "\"."
+		"\nroom_description=\"" + Controller->CurrentRoom->Description + "\""
+		"\nnearby_object_ids=" + GenerateYouSeeString() +
 		"\nadjacent_rooms=" + GenerateDoorsString() +
+		"\nrecent_rooms=" + GenerateRecentPlacesString() + 
 		"\n" + SeeGuestPrompt + guestString;
 }
 
@@ -350,36 +379,59 @@ void ABartlebySystem::StartOpenAICall()
 			TSharedRef<TJsonReader<TCHAR>> JsonReader = 
 				TJsonReaderFactory<TCHAR>::Create(pResponse->GetContentAsString());
 			TSharedPtr<FJsonObject> jsonObject;
+			bool wasParsingError = false;
 			if (FJsonSerializer::Deserialize(JsonReader, jsonObject))
 			{
 
 				if (jsonObject)
 				{
-					TArray<TSharedPtr<FJsonValue>> ChoicesArray = jsonObject->GetArrayField("choices");
-					if (ChoicesArray.Num() > 0)
+					if (jsonObject->HasField("choices"))
 					{
-						TSharedPtr<FJsonObject> ChoiceObject = ChoicesArray[0]->AsObject();
-						if (ChoiceObject)
+						TArray<TSharedPtr<FJsonValue>> ChoicesArray = jsonObject->GetArrayField("choices");
+						if (ChoicesArray.Num() > 0)
 						{
-							TSharedPtr<FJsonObject> MessageObject = ChoiceObject->GetObjectField("message");
-							FString Role = MessageObject->GetStringField("role");
-							FString Content = MessageObject->GetStringField("content");
-							LastThingOpenAISaid = Content;
-							TArray<FString> Lines;
-							LastThingOpenAISaid.ParseIntoArrayLines(Lines, true);
-							if (Lines.Num() > 0)
+							TSharedPtr<FJsonObject> ChoiceObject = ChoicesArray[0]->AsObject();
+							if (ChoiceObject)
 							{
-								LastThingOpenAISaid = Lines[0];
+								TSharedPtr<FJsonObject> MessageObject = ChoiceObject->GetObjectField("message");
+								FString Role = MessageObject->GetStringField("role");
+								FString Content = MessageObject->GetStringField("content");
+								LastThingOpenAISaid = Content;
+								TArray<FString> Lines;
+								LastThingOpenAISaid.ParseIntoArrayLines(Lines, true);
+								if (Lines.Num() > 0)
+								{
+									LastThingOpenAISaid = Lines[0];
+								}
+								Log.push_back(BartlebyLogElement{ BartlebyLogType::Output, LastThingOpenAISaid });
 							}
-							Log.push_back(BartlebyLogElement{ BartlebyLogType::Output, LastThingOpenAISaid });
+						}
+						else
+						{
+							wasParsingError = true;
 						}
 					}
+					else
+					{
+						wasParsingError = true;
+					}
+				}
+				else
+				{
+					wasParsingError = true;
 				}
 				
 			}
 			else
 			{
 				LOGE("Failed to deserialize from json reader!");
+				wasParsingError = true;
+			}
+
+			if (wasParsingError)
+			{
+				LOGW("Clearing the log, openAI failed.")
+				Log.clear();
 			}
 		}
 		else 

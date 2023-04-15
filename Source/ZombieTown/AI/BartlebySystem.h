@@ -148,6 +148,7 @@ public:
 	FString GeneratePrompt(bool askForHelp);
 	FString GenerateYouSeeString();
 	FString GenerateDoorsString();
+	FString GenerateRecentPlacesString();
 	void AppendMsg(const FString& lastMsg);
 	void AddLog(const FString& log);
 	std::deque<BartlebyLogElement> Log;

@@ -62,4 +62,7 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 		FString CharacterName = "Bartleby";
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	TArray<FString> RecentPlaces;
+
 };

@@ -86,6 +86,7 @@ void ABartlebyController::Tick(float dt)
 			// Wait for the player to get near after going to the object.
 			if (TargetActor)
 			{
+				SetFocus(TargetActor);
 				MoveToActor(TargetActor, 200.0f);
 				if (FVector::Dist2D(TargetActor->GetActorLocation(), GetCharacter()->GetActorLocation()) < 250.0f)
 				{
@@ -101,7 +102,14 @@ void ABartlebyController::Tick(float dt)
 			APlayerController* playerController = GetWorld()->GetFirstPlayerController();
 			if (playerController)
 			{
-				SetFocus(playerController->GetCharacter(), EAIFocusPriority::Gameplay);
+				if (TargetActor)
+				{
+					SetFocus(TargetActor);
+				}
+				else
+				{
+					SetFocus(playerController->GetCharacter(), EAIFocusPriority::Gameplay);
+				}
 				FVector actorPos = playerController->GetCharacter()->GetActorLocation();
 				// If the player is near, start the next round of ai stuff.
 				if (FVector::Dist2D(actorPos, GetCharacter()->GetActorLocation()) < 300.0f)
@@ -185,6 +193,14 @@ bool ABartlebyController::GoTo(const FString& LocationID, FString& errorMessage)
 	CurrentRoom = room;
 	TargetActor = room;
 	MoveToActor(CurrentRoom, 100.0f);
+	if (!RecentPlaces.Contains(LocationID))
+	{
+		RecentPlaces.Add(LocationID);
+		if (RecentPlaces.Num() > 5)
+		{
+			RecentPlaces.Remove(LocationID);
+		}
+	}
 	return true;
 }
 
@@ -252,6 +268,18 @@ bool ParseString(const FString& inputString, FString& command, FString& argument
 	{
 		command = inputString.Mid(0, openBracketIndex); // Extract the command before the opening bracket
 		argument = inputString.Mid(openBracketIndex + 1, closeBracketIndex - openBracketIndex - 1); // Extract the argument between the brackets
+		// Possibly chop off the quotes, because the AI loves quotes (python I guess).
+		if (argument.Len() > 0)
+		{
+			if (argument[0] == '"' || argument[0] == '\'')
+			{
+				argument = argument.Mid(1, argument.Len() - 1);
+			}
+			if (argument[argument.Len() - 1] == '"' || argument[argument.Len() - 1] == '\'')
+			{
+				argument = argument.Mid(0, argument.Len() - 1);
+			}
+		}
 		return true;
 	}
 	else // If the string is not in the correct format, set the output strings to empty
